@@ -133,7 +133,7 @@ module "eventbridge_rule" {
   targets = {
     "SendToCloudWatchLogs" = {
       arn      = module.cloudwatch_log_group.arn
-      role_arn = aws_iam_role.eventbridge_logs_role.arn
+      role_arn = null
     }
     "SendToSQS" = {
       arn      = module.sqs_queue.queue_arn
