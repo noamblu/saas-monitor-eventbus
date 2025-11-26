@@ -1,0 +1,40 @@
+name: saas-monitor-eventbus
+version: 1.0.0
+description: Modular EventBridge monitoring architecture with SQS and CloudWatch Logs targets.
+
+inputs:
+  aws_region:
+    type: string
+    default: eu-central-1
+    description: The AWS region to deploy resources into.
+  tags:
+    type: map(string)
+    default:
+      Project: SaaS-Monitor
+      Environment: Production
+      ManagedBy: Terraform
+    description: Common tags to apply to all resources.
+
+modules:
+  eventbridge-bus:
+    source: ./modules/eventbridge-bus
+    description: Custom EventBridge bus.
+  cloudwatch-log-group:
+    source: ./modules/cloudwatch-log-group
+    description: CloudWatch Log Group for event logging.
+  sqs-queue:
+    source: ./modules/sqs-queue
+    description: SQS queue with DLQ for event processing.
+  eventbridge-rule:
+    source: ./modules/eventbridge-rule
+    description: EventBridge rule to route events to targets.
+
+outputs:
+  sqs_queue_arn:
+    description: The ARN of the main SQS queue.
+  sqs_queue_url:
+    description: The URL of the main SQS queue.
+  sqs_dlq_arn:
+    description: The ARN of the dead-letter queue.
+  sqs_dlq_url:
+    description: The URL of the dead-letter queue.
