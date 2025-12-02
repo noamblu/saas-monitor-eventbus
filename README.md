@@ -28,13 +28,14 @@ graph TD
 - **Modular Design**: Each component (Bus, Queue, Logs, Rules) is a standalone Terraform module.
 - **Resilience**: SQS queues come with configured Dead Letter Queues (DLQ) for failed message handling.
 - **Observability**: All events are logged to CloudWatch Logs for debugging and audit.
+- **Event Replay**: EventBridge Archive enabled for event replay and debugging.
 - **Security**: IAM roles are scoped with least-privilege permissions.
 
 ## Modules
 
 | Module | Description | Source |
 |--------|-------------|--------|
-| `eventbridge-bus` | Creates the custom EventBridge bus | `./modules/eventbridge-bus` |
+| `eventbridge-bus` | Creates the custom EventBridge bus with optional Archive | `./modules/eventbridge-bus` |
 | `eventbridge-rule` | Manages rules and targets | `./modules/eventbridge-rule` |
 | `sqs-queue` | Deploys SQS queues with optional DLQ | `./modules/sqs-queue` |
 | `cloudwatch-log-group` | Sets up Log Groups with retention | `./modules/cloudwatch-log-group` |

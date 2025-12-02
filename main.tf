@@ -6,6 +6,15 @@ module "eventbridge_bus" {
 
   name = "ops-main-cust-bus"
   tags = var.tags
+
+  archive_config = {
+    enabled        = true
+    name           = "ops-main-bus-archive"
+    retention_days = 30
+    event_pattern = jsonencode({
+      source = [{ "prefix" : "com.saas.monitor" }]
+    })
+  }
 }
 
 # -----------------------------------------------------------------------------
@@ -19,47 +28,26 @@ module "cloudwatch_log_group" {
   tags              = var.tags
 }
 
-# IAM Role for CloudWatch Logs
-resource "aws_iam_role" "eventbridge_logs_role" {
-  name = "eventbridge-logs-role"
-  tags = var.tags
-
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Action = "sts:AssumeRole"
-        Effect = "Allow"
-        Principal = {
-          Service = "events.amazonaws.com"
-        }
-      }
+# Resource Policy for CloudWatch Logs
+# EventBridge requires a resource policy on CloudWatch Logs to allow writing events.
+data "aws_iam_policy_document" "logs_resource_policy_doc" {
+  statement {
+    effect = "Allow"
+    actions = [
+      "logs:CreateLogStream",
+      "logs:PutLogEvents"
     ]
-  })
+    principals {
+      type        = "Service"
+      identifiers = ["events.amazonaws.com"]
+    }
+    resources = ["${module.cloudwatch_log_group.arn}:*"]
+  }
 }
 
-resource "aws_iam_policy" "eventbridge_logs_policy" {
-  name        = "eventbridge-logs-policy"
-  description = "Allow EventBridge to write to CloudWatch Logs"
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Action = [
-          "logs:CreateLogStream",
-          "logs:PutLogEvents"
-        ]
-        Effect   = "Allow"
-        Resource = "${module.cloudwatch_log_group.arn}:*"
-      }
-    ]
-  })
-}
-
-resource "aws_iam_role_policy_attachment" "eventbridge_logs_attach" {
-  role       = aws_iam_role.eventbridge_logs_role.name
-  policy_arn = aws_iam_policy.eventbridge_logs_policy.arn
+resource "aws_cloudwatch_log_resource_policy" "logging_policy" {
+  policy_name     = "saas-monitor-eventbridge-policy"
+  policy_document = data.aws_iam_policy_document.logs_resource_policy_doc.json
 }
 
 # -----------------------------------------------------------------------------
