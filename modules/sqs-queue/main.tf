@@ -1,13 +1,17 @@
 resource "aws_sqs_queue" "dlq" {
   count = var.dlq_config.enabled ? 1 : 0
 
-  name = var.dlq_config.name
-  tags = var.tags
+  name                        = var.dlq_config.name
+  fifo_queue                  = var.fifo_queue
+  content_based_deduplication = var.content_based_deduplication
+  tags                        = var.tags
 }
 
 resource "aws_sqs_queue" "this" {
-  name = var.name
-  tags = var.tags
+  name                        = var.name
+  fifo_queue                  = var.fifo_queue
+  content_based_deduplication = var.content_based_deduplication
+  tags                        = var.tags
 
   redrive_policy = var.dlq_config.enabled ? jsonencode({
     deadLetterTargetArn = aws_sqs_queue.dlq[0].arn

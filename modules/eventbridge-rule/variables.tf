@@ -22,8 +22,9 @@ variable "event_pattern" {
 variable "targets" {
   description = "A map of targets to add to the rule"
   type = map(object({
-    arn      = string
-    role_arn = optional(string)
+    arn              = string
+    role_arn         = optional(string)
+    message_group_id = optional(string)
   }))
   default = {}
 }

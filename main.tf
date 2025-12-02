@@ -56,10 +56,12 @@ resource "aws_cloudwatch_log_resource_policy" "logging_policy" {
 module "sqs_queue" {
   source = "./modules/sqs-queue"
 
-  name = "update-omnibus"
+  name                        = "update-omnibus.fifo"
+  fifo_queue                  = true
+  content_based_deduplication = true
   dlq_config = {
     enabled           = true
-    name              = "update-omnibus-dlq"
+    name              = "update-omnibus-dlq.fifo"
     max_receive_count = 5
   }
   tags = var.tags
@@ -124,8 +126,9 @@ module "eventbridge_rule" {
       role_arn = null
     }
     "SendToSQS" = {
-      arn      = module.sqs_queue.queue_arn
-      role_arn = aws_iam_role.eventbridge_sqs_role.arn
+      arn              = module.sqs_queue.queue_arn
+      role_arn         = aws_iam_role.eventbridge_sqs_role.arn
+      message_group_id = "monitor-events"
     }
   }
   tags = var.tags

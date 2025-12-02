@@ -22,3 +22,15 @@ variable "tags" {
   type        = map(string)
   default     = {}
 }
+
+variable "fifo_queue" {
+  description = "Boolean designating a FIFO queue"
+  type        = bool
+  default     = false
+}
+
+variable "content_based_deduplication" {
+  description = "Enables content-based deduplication for FIFO queues"
+  type        = bool
+  default     = false
+}
