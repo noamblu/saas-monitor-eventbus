@@ -133,3 +133,70 @@ module "eventbridge_rule" {
   }
   tags = var.tags
 }
+
+# -----------------------------------------------------------------------------
+# Lambda Layer
+# -----------------------------------------------------------------------------
+resource "aws_lambda_layer_version" "observability_cert" {
+  filename            = "${path.module}/src/update_omnibus/observability-cert.zip"
+  layer_name          = "observability-cert"
+  compatible_runtimes = ["python3.9"]
+}
+
+# -----------------------------------------------------------------------------
+# Lambda Function - Update Omnibus
+# -----------------------------------------------------------------------------
+module "update_omnibus_lambda" {
+  source = "./modules/lambda"
+
+  name    = "update-omnibus"
+  handler = "update_omnibus.lambda_handler"
+  runtime = "python3.9"
+
+  source_config = {
+    path = "${path.module}/src/update_omnibus/update_omnibus.py"
+    type = "file"
+  }
+
+  layers = [aws_lambda_layer_version.observability_cert.arn]
+
+  environment_variables = {
+    OMNIBUS_URL = "https://example.com/omnibus" # Placeholder
+    CERT_PATH   = "/opt/cert.pem"               # Asset path
+  }
+
+  tags = var.tags
+}
+
+# Allow Lambda to poll SQS
+resource "aws_iam_policy" "lambda_sqs_policy" {
+  name        = "update-omnibus-sqs-policy"
+  description = "Allow Lambda to receive messages from SQS"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = [
+          "sqs:ReceiveMessage",
+          "sqs:DeleteMessage",
+          "sqs:GetQueueAttributes"
+        ]
+        Effect   = "Allow"
+        Resource = module.sqs_queue.queue_arn
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "lambda_sqs_attach" {
+  role       = "${module.update_omnibus_lambda.function_name}-role"
+  policy_arn = aws_iam_policy.lambda_sqs_policy.arn
+}
+
+# SQS Trigger
+resource "aws_lambda_event_source_mapping" "sqs_trigger" {
+  event_source_arn = module.sqs_queue.queue_arn
+  function_name    = module.update_omnibus_lambda.function_name
+  batch_size       = 10
+}
