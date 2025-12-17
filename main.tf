@@ -161,8 +161,9 @@ module "update_omnibus_lambda" {
   layers = [aws_lambda_layer_version.observability_cert.arn]
 
   environment_variables = {
-    OMNIBUS_URL = "https://example.com/omnibus" # Placeholder
-    CERT_PATH   = "/opt/cert.pem"               # Asset path
+    OMNIBUS_URL   = "https://example.com/omnibus" # Placeholder
+    CERT_PATH     = "/opt/cert.pem"               # Asset path
+    SQS_QUEUE_URL = module.sqs_queue.queue_url
   }
 
   tags = var.tags
@@ -185,9 +186,65 @@ module "update_omnibus_lambda" {
   ]
 }
 
-# SQS Trigger
-resource "aws_lambda_event_source_mapping" "sqs_trigger" {
-  event_source_arn = module.sqs_queue.queue_arn
-  function_name    = module.update_omnibus_lambda.function_name
-  batch_size       = 10
+# -----------------------------------------------------------------------------
+# EventBridge Scheduler for Lambda
+# -----------------------------------------------------------------------------
+resource "aws_iam_role" "scheduler_role" {
+  name = "update-omnibus-scheduler-role"
+  tags = var.tags
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {
+          Service = "scheduler.amazonaws.com"
+        }
+      }
+    ]
+  })
+}
+
+resource "aws_iam_policy" "scheduler_policy" {
+  name        = "update-omnibus-scheduler-policy"
+  description = "Allow Scheduler to invoke Lambda"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action   = "lambda:InvokeFunction"
+        Effect   = "Allow"
+        Resource = module.update_omnibus_lambda.arn
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "scheduler_attach" {
+  role       = aws_iam_role.scheduler_role.name
+  policy_arn = aws_iam_policy.scheduler_policy.arn
+}
+
+resource "aws_scheduler_schedule" "lambda_schedule" {
+  name       = "update-omnibus-schedule"
+  group_name = "default"
+
+  flexible_time_window {
+    mode = "OFF"
+  }
+
+  schedule_expression = "rate(5 minutes)"
+
+  target {
+    arn      = module.update_omnibus_lambda.arn
+    role_arn = aws_iam_role.scheduler_role.arn
+
+    retry_policy {
+      maximum_event_age_in_seconds = 300
+      maximum_retry_attempts       = 0 # Let Lambda retry/DLQ handle failures or SQS retention
+    }
+  }
 }
