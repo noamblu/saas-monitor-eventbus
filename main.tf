@@ -189,62 +189,11 @@ module "update_omnibus_lambda" {
 # -----------------------------------------------------------------------------
 # EventBridge Scheduler for Lambda
 # -----------------------------------------------------------------------------
-resource "aws_iam_role" "scheduler_role" {
-  name = "update-omnibus-scheduler-role"
-  tags = var.tags
+module "update_omnibus_schedule" {
+  source = "./modules/eventbridge-scheduler"
 
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Action = "sts:AssumeRole"
-        Effect = "Allow"
-        Principal = {
-          Service = "scheduler.amazonaws.com"
-        }
-      }
-    ]
-  })
-}
-
-resource "aws_iam_policy" "scheduler_policy" {
-  name        = "update-omnibus-scheduler-policy"
-  description = "Allow Scheduler to invoke Lambda"
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Action   = "lambda:InvokeFunction"
-        Effect   = "Allow"
-        Resource = module.update_omnibus_lambda.arn
-      }
-    ]
-  })
-}
-
-resource "aws_iam_role_policy_attachment" "scheduler_attach" {
-  role       = aws_iam_role.scheduler_role.name
-  policy_arn = aws_iam_policy.scheduler_policy.arn
-}
-
-resource "aws_scheduler_schedule" "lambda_schedule" {
-  name       = "update-omnibus-schedule"
-  group_name = "default"
-
-  flexible_time_window {
-    mode = "OFF"
-  }
-
+  name                = "update-omnibus-schedule"
   schedule_expression = "rate(5 minutes)"
-
-  target {
-    arn      = module.update_omnibus_lambda.arn
-    role_arn = aws_iam_role.scheduler_role.arn
-
-    retry_policy {
-      maximum_event_age_in_seconds = 300
-      maximum_retry_attempts       = 0 # Let Lambda retry/DLQ handle failures or SQS retention
-    }
-  }
+  target_arn          = module.update_omnibus_lambda.arn
+  tags                = var.tags
 }

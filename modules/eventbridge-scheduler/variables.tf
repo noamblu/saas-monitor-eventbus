@@ -4,32 +4,23 @@ variable "name" {
 }
 
 variable "schedule_expression" {
-  description = "Schedule expression (e.g., rate(5 minutes))"
+  description = "The schedule expression (e.g., rate(5 minutes) or cron(0 12 * * ? *))"
   type        = string
 }
 
-variable "target_config" {
-  description = "Configuration for the target"
-  type = object({
-    arn      = string
-    role_arn = string
-    input    = optional(string, "{}")
-  })
+variable "target_arn" {
+  description = "ARN of the target resource"
+  type        = string
 }
 
-variable "flexible_time_window" {
-  description = "Configuration for flexible time window"
-  type = object({
-    mode                      = string # "OFF" or "FLEXIBLE"
-    maximum_window_in_minutes = optional(number)
-  })
-  default = {
-    mode = "OFF"
-  }
+variable "group_name" {
+  description = "Name of the schedule group"
+  type        = string
+  default     = "default"
 }
 
 variable "tags" {
-  description = "Tags to assign to resources"
+  description = "Tags to apply to resources"
   type        = map(string)
   default     = {}
 }
