@@ -166,32 +166,23 @@ module "update_omnibus_lambda" {
   }
 
   tags = var.tags
-}
 
-# Allow Lambda to poll SQS
-resource "aws_iam_policy" "lambda_sqs_policy" {
-  name        = "update-omnibus-sqs-policy"
-  description = "Allow Lambda to receive messages from SQS"
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Action = [
-          "sqs:ReceiveMessage",
-          "sqs:DeleteMessage",
-          "sqs:GetQueueAttributes"
-        ]
-        Effect   = "Allow"
-        Resource = module.sqs_queue.queue_arn
-      }
-    ]
-  })
-}
-
-resource "aws_iam_role_policy_attachment" "lambda_sqs_attach" {
-  role       = "${module.update_omnibus_lambda.function_name}-role"
-  policy_arn = aws_iam_policy.lambda_sqs_policy.arn
+  additional_policies = [
+    jsonencode({
+      Version = "2012-10-17"
+      Statement = [
+        {
+          Action = [
+            "sqs:ReceiveMessage",
+            "sqs:DeleteMessage",
+            "sqs:GetQueueAttributes"
+          ]
+          Effect   = "Allow"
+          Resource = module.sqs_queue.queue_arn
+        }
+      ]
+    })
+  ]
 }
 
 # SQS Trigger
