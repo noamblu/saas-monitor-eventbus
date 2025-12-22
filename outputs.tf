@@ -17,3 +17,13 @@ output "sqs_dlq_url" {
   description = "The URL of the dead-letter queue"
   value       = module.sqs_queue.dlq_url
 }
+
+output "lambda_function_name" {
+  description = "The name of the update_omnibus Lambda"
+  value       = module.update_omnibus_lambda.function_name
+}
+
+output "scheduler_arn" {
+  description = "The ARN of the EventBridge Schedule"
+  value       = module.update_omnibus_schedule.schedule_arn
+}
