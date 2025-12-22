@@ -17,7 +17,7 @@ graph TD
     
     SQS -.->|Redrive Policy| DLQ[Dead Letter FIFO Queue]
     
-    Scheduler[EventBridge Scheduler] -->|Trigger: rate(5 min)| Lambda[Lambda: update_omnibus]
+    Scheduler[EventBridge Scheduler] -->|"Trigger: rate(5 min)"| Lambda[Lambda: update_omnibus]
     Lambda -->|Poll| SQS
     Lambda -->|HTTPS POST| Omnibus[Omnibus Endpoint]
     
