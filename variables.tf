@@ -19,3 +19,15 @@ variable "tags" {
     ManagedBy   = "Terraform"
   }
 }
+
+variable "omnibus_url" {
+  description = "URL of the Omnibus endpoint"
+  type        = string
+  default     = "https://example.com/omnibus"
+}
+
+variable "cert_path" {
+  description = "Path to the certificate within the Lambda Layer"
+  type        = string
+  default     = "/opt/cert.pem"
+}

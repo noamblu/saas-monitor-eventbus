@@ -161,8 +161,8 @@ module "update_omnibus_lambda" {
   layers = [aws_lambda_layer_version.observability_cert.arn]
 
   environment_variables = {
-    OMNIBUS_URL   = "https://example.com/omnibus" # Placeholder
-    CERT_PATH     = "/opt/cert.pem"               # Asset path
+    OMNIBUS_URL   = var.omnibus_url
+    CERT_PATH     = var.cert_path
     SQS_QUEUE_URL = module.sqs_queue.queue_url
   }
 
