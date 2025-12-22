@@ -180,10 +180,39 @@ module "update_omnibus_lambda" {
           ]
           Effect   = "Allow"
           Resource = module.sqs_queue.queue_arn
+        },
+        {
+          Action = [
+            "ec2:CreateNetworkInterface",
+            "ec2:DescribeNetworkInterfaces",
+            "ec2:DeleteNetworkInterface"
+          ]
+          Effect   = "Allow"
+          Resource = "*"
         }
       ]
     })
   ]
+
+  vpc_config = {
+    subnet_ids         = data.aws_subnets.selected.ids
+    security_group_ids = [aws_security_group.lambda_sg.id]
+  }
+}
+
+resource "aws_security_group" "lambda_sg" {
+  name        = "update-omnibus-lambda-sg"
+  description = "Security group for update-omnibus Lambda"
+  vpc_id      = data.aws_vpc.selected.id
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = var.tags
 }
 
 # -----------------------------------------------------------------------------
